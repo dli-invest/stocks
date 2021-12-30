@@ -36,7 +36,7 @@ etf_tickers = to_pull.col_values(3)[1:]
 if len(industry_tickers_subset) > 1:
     industry_tickers = industry_tickers_subset 
 
-tickers += industry_tickers 
+tickers += industry_tickers
 no_blank_ticker = []
 for ticker in tickers:
     if len(ticker) > 0 and ticker not in exclude_list and ticker not in no_blank_ticker:
@@ -62,7 +62,7 @@ index_cols, index_output = [], []
 # declare what data to pull
 # single sources are for sources that can only take one ticker at a time
 single_sources, bulk_sources = [], []
-if len(tickers) > 0: 
+if tickers: 
     single_sources = [
                 ['income-statement/', 'with-limit', income_cols, income_output, 'income'],
                 ['cash-flow-statement/','with-limit', cf_cols, cf_output, 'cf'],
@@ -92,9 +92,9 @@ for source in single_sources:
         url = 'https://financialmodelingprep.com/api/v3/'
         if param_type == 'ticker-only':
             url += source[0] + ticker + '?apikey=' + api_key
-        if param_type == 'with-limit':
+        elif param_type == 'with-limit':
             url += source[0] + ticker + '?limit=' + str(num_years) + '&apikey=' + api_key
-        
+
         if verbose:
             split_url = url.split('apikey=')[0]
             print("URL: " + str(split_url) + '\n')
@@ -116,7 +116,7 @@ for source in single_sources:
                 break
 
             # add symbol data for TTM sources
-            if type == 'km-ttm' or type == 'ratio-ttm':
+            if type in ['km-ttm', 'ratio-ttm']:
                 symbol = {'symbol': ticker}
                 symbol.update(item)
                 item = symbol
@@ -135,26 +135,25 @@ for source in single_sources:
 
 # fetch data from API
 for source in bulk_sources:
-    type, param_type = source[4], source[1]    
+    type, param_type = source[4], source[1]
     print('Fetching ' + type)
 
     # configure urls 
     url = 'https://financialmodelingprep.com/api/v3/'
     if type == 'tickers':
-            url += '/stock-screener?marketCapMoreThan=10000000&exchange=nasdaq,nyse,euronext&isActivelyTraded=true&apikey=' + api_key        
-    if param_type == 'no-input':
-        url += source[0] + '?apikey=' + api_key
+            url += '/stock-screener?marketCapMoreThan=10000000&exchange=nasdaq,nyse,euronext&isActivelyTraded=true&apikey=' + api_key
     if param_type == 'multiple-tickers':
         if type == 'quotes':
             extended_tickers = list(tickers)
             extended_tickers.extend(etf_tickers)
         url += source[0] + ','.join(extended_tickers) + '?apikey=' + api_key 
 
+    elif param_type == 'no-input':
+        url += source[0] + '?apikey=' + api_key
     # get response
     response = requests.get(url)
     response = response.json()
 
-     # add each row in response
     for item in response:
         # don't add if there's an error
         if item == 'Error Message':
@@ -230,19 +229,19 @@ for source in sources:
     # drop unwanted columns
     to_drop = []
     type = source[4]
-    if type == 'tickers':
-        to_drop = [5,6,7,8,9,10,11,12,13]
-    if type == 'commodities':
-        to_drop = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21] 
-    if type == 'quotes':
-        to_drop = [5,6,12,13,14,15,16,19,21]
-    if type == 'income':
-        to_drop = [3,4,10,11,12,13,14,15,16,17,19,20,21,22,23,24,25,27,28,29,30,31,32,33]
     if type == 'cf':
         to_drop = [4,6,7,8,9,10,11,12,13,14,15,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,34,36,37]
-    if type == 'ratio-ttm':
+    elif type == 'commodities':
+        to_drop = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]
+    elif type == 'income':
+        to_drop = [3,4,10,11,12,13,14,15,16,17,19,20,21,22,23,24,25,27,28,29,30,31,32,33]
+    elif type == 'quotes':
+        to_drop = [5,6,12,13,14,15,16,19,21]
+    elif type == 'ratio-ttm':
         to_drop = [1,2,3,4,5,6,7,8,9,10,12,16,18,22,23,24,29,32,33,34,35,36,37,38,39,40,41,46,47,48,39,40,41,46,47,48,49,50,51,52,53,54,55]
-    if len(to_drop) > 0:
+    elif type == 'tickers':
+        to_drop = [5,6,7,8,9,10,11,12,13]
+    if to_drop:
         table.drop(table.columns[to_drop], axis=1, inplace=True)
 
     # upload table

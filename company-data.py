@@ -73,29 +73,29 @@ sources = single_sources + bulk_sources
 # fetch data from API
 for source in sources:
     for ticker in tickers:
-        type, param_type = source[4], source[1] 
+        type, param_type = source[4], source[1]
         print("Fetching "+ type + ' for ' + ticker)
-           
+
         # configure urls 
         url = 'https://financialmodelingprep.com/api/v3/'
-        if param_type == 'ticker-only':
-            url += source[0] + ticker + '?apikey=' + api_key
-        elif param_type == 'with-limit':
-            url += source[0] + ticker + '?limit=' + str(num_years) + '&apikey=' + api_key 
-        elif param_type == 'multiple-tickers':
+        if param_type == 'multiple-tickers':
             url += source[0] + ','.join(tickers) + '?apikey=' + api_key
 
+        elif param_type == 'ticker-only':
+            url += source[0] + ticker + '?apikey=' + api_key
+        elif param_type == 'with-limit':
+            url += source[0] + ticker + '?limit=' + str(num_years) + '&apikey=' + api_key
         # get response
         response = requests.get(url)
         response = response.json()
 
         if type in period_sources:
-            url = 'https://financialmodelingprep.com/api/v3/' + source[0] + ticker + '?period=quarter&limit=' + str(num_periods) + '&apikey=' + api_key 
+            url = 'https://financialmodelingprep.com/api/v3/' + source[0] + ticker + '?period=quarter&limit=' + str(num_periods) + '&apikey=' + api_key
             period_response = requests.get(url)
             period_response = period_response.json()
 
             new_resp, new_period_resp = [], []
-            if type == 'ratio' or type == 'km':
+            if type in ['ratio', 'km']:
                 for item in response:
                     period = {'period': 'FY'}
                     period.update(item)
@@ -104,11 +104,11 @@ for source in sources:
                 for item in period_response:
                     month = item['date'].split("-")
                     month = month[1]
-                    if month == "01" or month == "02" or month == "03":
+                    if month in ["01", "02", "03"]:
                         quarter = 'Q1'
-                    elif month == "04" or month == "05" or month == "06":
+                    elif month in ["04", "05", "06"]:
                         quarter = 'Q2'
-                    elif month == "07" or month == "08" or month == "09":
+                    elif month in ["07", "08", "09"]:
                         quarter = 'Q3'
                     else:
                         quarter = 'Q4'
@@ -134,7 +134,7 @@ for source in sources:
                 break   
 
             # add symbol data for TTM sources
-            if type == 'km-ttm' or type == 'ratio-ttm':
+            if type in ['km-ttm', 'ratio-ttm']:
                 symbol = {'symbol': ticker}
                 symbol.update(item)
                 item = symbol
@@ -143,10 +143,7 @@ for source in sources:
             keys = list(item.keys())
             if type == 'shares':
                 to_keep = ["date", "symbol", "period", "commonstocksharesoutstanding"]
-                updated_item = {}
-                for key in to_keep:
-                    if key in keys:
-                        updated_item[key] = item[key]
+                updated_item = {key: item[key] for key in to_keep if key in keys}
                 item = updated_item
                 keys = list(item.keys())
 
@@ -179,30 +176,30 @@ for source in sources:
     # drop unwanted columns
     to_drop = []
     type = source[4]
-    if type == 'quotes':
-        to_drop = [3,4,5,6,10,11,12,13,14,15,16,17,18,19,21]
-    if type == 'profiles':
-        to_drop = [1,2,3,4,5,6,7,8,10,11,12,13,14,16,18,20,21,22,23,24,25,26,27,28,29,30,31,32,33];
-    if type == 'km-ttm':
-        to_drop = [8,9,17,18,19,20,21,26,28,29,30,31,32,33,34,35,36,37,38,39,42,44,45,47,48,49,50,51,52,55,56]
-    if type == 'ratio-ttm':
-        to_drop = [1,2,3,4,5,6,7,8,9,10,11,12,22,23,24,27,28,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,55,56,57]
-    if type == 'income':
-        to_drop = [4,9,19,21,22,23,24,25,27,29,30,31,32,33]
     if type == 'bs':
         to_drop = [4,8,16,30,31,32,33,38,39,41,45,46]
-    if type == 'cf':
+    elif type == 'cf':
         to_drop = [4,36,37]
-    if type == 'km':
+    elif type == 'income':
+        to_drop = [4,9,19,21,22,23,24,25,27,29,30,31,32,33]
+    elif type == 'km':
         to_drop = [11, 20, 21, 22, 23, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58]
-    if type == 'ratio':
+    elif type == 'km-ttm':
+        to_drop = [8,9,17,18,19,20,21,26,28,29,30,31,32,33,34,35,36,37,38,39,42,44,45,47,48,49,50,51,52,55,56]
+    elif type == 'profiles':
+        to_drop = [1,2,3,4,5,6,7,8,10,11,12,13,14,16,18,20,21,22,23,24,25,26,27,28,29,30,31,32,33];
+    elif type == 'quotes':
+        to_drop = [3,4,5,6,10,11,12,13,14,15,16,17,18,19,21]
+    elif type == 'ratio':
         to_drop = [3, 4, 5, 6, 7, 8, 9, 10, 13, 19, 20, 21, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 53, 54, 55, 56]
-    if len(to_drop) > 0:
+    elif type == 'ratio-ttm':
+        to_drop = [1,2,3,4,5,6,7,8,9,10,11,12,22,23,24,27,28,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,55,56,57]
+    if to_drop:
         table.drop(table.columns[to_drop], axis=1, inplace=True)
 
     # upload table
     print(type + ' table: ' + '\n' + str(table) + '\n')
-    d2g.upload(table, spreadsheet_key, type, credentials=creds, row_names=True) 
+    d2g.upload(table, spreadsheet_key, type, credentials=creds, row_names=True)
     time.sleep(60)
 
 now = datetime.datetime.now()

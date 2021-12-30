@@ -92,7 +92,7 @@ def fetch_industry_stats(input, type):
     total_avg_growth, total_avg_margin = [], []
     early_tickers, middle_tickers, mature_tickers = [], [], []
     company_stats = {}
-    # pull rev growth, operating margin numbers over time 
+    # pull rev growth, operating margin numbers over time
     for ticker in industry_tickers:
         url = 'https://financialmodelingprep.com/api/v3/income-statement/' + ticker + '?limit=150&apikey=' + api_key
         response = requests.get(url).json()
@@ -114,13 +114,13 @@ def fetch_industry_stats(input, type):
                     continue
                 rev_growth_rate = round((revenue - previous_rev) / previous_rev, 4)
                 rev_growth_rates.append(rev_growth_rate)
- 
+
         rev_growth_rates.reverse()
         operating_margins.reverse()
         age = len(operating_margins)
-        if len(rev_growth_rates) > 0:
+        if rev_growth_rates:
             avg_growth = stats.mean(rev_growth_rates)
-        if len(operating_margins) > 0:
+        if operating_margins:
             mid_life = round(age / 2)
             avg_mid_life_margin = stats.mean(operating_margins[mid_life:]) # want margin to be more heavily focused on later company stage
 
@@ -187,7 +187,7 @@ def fetch_industry_stats(input, type):
     middle_dict = {'tickers': middle_tickers, 'avg_growth': middle_avg_growth, 'avg_margin': middle_avg_margin, 'count': middle_tickers.count}
     mature_dict = {'tickers': mature_tickers, 'avg_growth': mature_avg_growth, 'avg_margin': mature_avg_margin, 'count': mature_tickers.count}
     update_dict = {'avg_growth': avg_growth, 'avg_margin': avg_margin, 'small': small_dict, 'middle': middle_dict, 'mature': mature_dict}
-    
+
     if country == "US":
         us_industries[industry].update(update_dict)
     else: 
@@ -221,10 +221,7 @@ def fetch_metrics(ticker):
         taxes_ttm += item['incomeTaxExpense']
         taxable_income_ttm += item['incomeBeforeTax']
 
-    rev_last_ttm = 0
-    for item in income_statement_last_ttm:
-        rev_last_ttm += item['revenue']
-
+    rev_last_ttm = sum(item['revenue'] for item in income_statement_last_ttm)
     rev_growth = (rev_ttm - rev_last_ttm) / rev_last_ttm if rev_last_ttm > 0 else 0
     effective_tax_rate = taxes_ttm / taxable_income_ttm  
 
@@ -248,10 +245,7 @@ def fetch_metrics(ticker):
     url = 'https://financialmodelingprep.com/api/v3/cash-flow-statement/' + ticker + '?period=quarter&limit=4&apikey=' + api_key
     response = requests.get(url).json()
 
-    fcf_ttm = 0
-    for item in response[:4]:
-        fcf_ttm += item['freeCashFlow']
-
+    fcf_ttm = sum(item['freeCashFlow'] for item in response[:4])
     cf_vals = {'fcf_ttm': fcf_ttm}
     data.update(cf_vals)
 
@@ -261,13 +255,13 @@ def fetch_metrics(ticker):
 
     # if no estimates returned, default to existing growth rates / margins
     if len(response) == 0:
-            print("Note: no estimates given for " + ticker + " - using existing revenue growth numbers.")
-            avg_rev_growth_current_yr, low_rev_growth_current_yr, high_rev_growth_current_yr = rev_growth, rev_growth, rev_growth
-            avg_rev_growth_next_yr, low_rev_growth_next_yr, high_rev_growth_next_yr = rev_growth, rev_growth, rev_growth
-            current_op_margin = op_income_ttm / rev_ttm
+        print("Note: no estimates given for " + ticker + " - using existing revenue growth numbers.")
+        avg_rev_growth_current_yr, low_rev_growth_current_yr, high_rev_growth_current_yr = rev_growth, rev_growth, rev_growth
+        avg_rev_growth_next_yr, low_rev_growth_next_yr, high_rev_growth_next_yr = rev_growth, rev_growth, rev_growth
+        current_op_margin = op_income_ttm / rev_ttm
 
-            estimates_dict = {'rev_growth_estimates': {current_year: [low_rev_growth_current_yr, avg_rev_growth_current_yr, high_rev_growth_current_yr]},
-                                'margin_estimates': {current_year: [current_op_margin, current_op_margin, current_op_margin]}}  
+        estimates_dict = {'rev_growth_estimates': {current_year: [low_rev_growth_current_yr, avg_rev_growth_current_yr, high_rev_growth_current_yr]},
+                            'margin_estimates': {current_year: [current_op_margin, current_op_margin, current_op_margin]}}
     else:
         # reverse response entries to go from old to new and pull out relevant estimates
         estimates = []
@@ -279,14 +273,14 @@ def fetch_metrics(ticker):
                 estimates.append(item)
 
         # if no relevant estimates returned, default to existing growth rates / margins
-        if len(estimates) == 0:
+        if not estimates:
             print("Note: no estimates given for " + ticker + " - using existing revenue growth numbers.")
             avg_rev_growth_current_yr, low_rev_growth_current_yr, high_rev_growth_current_yr = rev_growth, rev_growth, rev_growth
             avg_rev_growth_next_yr, low_rev_growth_next_yr, high_rev_growth_next_yr = rev_growth, rev_growth, rev_growth
             current_op_margin = op_income_ttm / rev_ttm
 
             estimates_dict = {'rev_growth_estimates': {current_year: [low_rev_growth_current_yr, avg_rev_growth_current_yr, high_rev_growth_current_yr]},
-                                'margin_estimates': {current_year: [current_op_margin, current_op_margin, current_op_margin]}}            
+                                'margin_estimates': {current_year: [current_op_margin, current_op_margin, current_op_margin]}}
         else: 
             # calculate growth rates
             avg_rev_key = 'estimatedRevenueAvg'
@@ -318,7 +312,7 @@ def fetch_metrics(ticker):
                 year = int(estimate['date'].split("-")[0])
                 estimates_dict['rev_growth_estimates'][year] = [low_rev_growth, avg_rev_growth, high_rev_growth]
                 estimates_dict['margin_estimates'][year] = [low_margin, avg_margin, high_margin]
-            
+
     data.update(estimates_dict)
 
     if show_metrics:
@@ -337,7 +331,7 @@ def fetch_metrics(ticker):
 def print_vals(dict, type="percent"):
     for key in dict.keys():
         value = dict[key]
-        if isinstance(value, float) or isinstance(value, int):
+        if isinstance(value, (float, int)):
             print(key + ": " + str(convert(value, type)))
         elif isinstance(value, list):
             print(key + ": " + str([convert(num, type) for num in value]))
