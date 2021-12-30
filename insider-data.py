@@ -12,7 +12,7 @@ print("Warming up ...")
 urls = ["http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd=365&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=25&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=5000&page=1",
 "http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd=365&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=25&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=5000&page=2"]
 
-first = True 
+first = True
 data = []
 
 for url in urls:
@@ -32,20 +32,19 @@ for url in urls:
 		for header in headers:
 			th = header.text.strip()
 			headings.append(th)
-	
+
 	for row in rows:
 		# print('Row: ' + str(row) + '\n')
 		cols = row.find_all('td')
 		cols = [ele.text.strip() for ele in cols]
 		row_data = []
 		for ele in cols: 
-			if len(ele) > 0:
-				if ele[0] == '+' and ele[1] == "$":
-					ele = ele[2:].split(",")
-					if len(ele) == 2:
-						ele = float(ele[0] + ele[1])
-					elif len(ele) == 3:
-						ele = float(ele[0] + ele[1] + ele[2])
+			if len(ele) > 0 and ele[0] == '+' and ele[1] == "$":
+				ele = ele[2:].split(",")
+				if len(ele) == 2:
+					ele = float(ele[0] + ele[1])
+				elif len(ele) == 3:
+					ele = float(ele[0] + ele[1] + ele[2])
 			row_data.append(ele)
 		data.append(row_data)
 	first = False

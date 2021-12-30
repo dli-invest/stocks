@@ -145,10 +145,7 @@ response = requests.get(url)
 response = response.json()
 
 # add the data from the single row returned
-all_tickers = []
-for item in response:
-    all_tickers.append(item['symbol'])
-
+all_tickers = [item['symbol'] for item in response]
 # fetch data per industry
 for industry in industries: 
     if industry == "":
@@ -165,7 +162,7 @@ for industry in industries:
     for key in metric_keys:
         metrics[key] = []
 
-    # fetch data 
+    # fetch data
     for ticker in tickers:
         ticker = ticker.split(".")[0]
         print("Gathering data for "+ ticker)
@@ -191,11 +188,11 @@ for industry in industries:
                         break
 
                 for key in keys:
-                    if item[key] == None:
+                    if item[key] is None:
                         print("No " + key + " data found for " + ticker)
                         continue
                     metrics[key].append(item[key])
-    
+
     # calculate percentiles 
     row = [industry, len(metrics["revenuePerShareTTM"])]
     for key in metric_keys:

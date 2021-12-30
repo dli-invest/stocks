@@ -57,31 +57,31 @@ for ticker in tickers:
 
                 # make sure that data was found
                 if data['found'] and len(data['data']) > 0:
-                    if statement == "pl":
+                    if statement == "bs":
                         # add the column descriptions once only
-                        if len(income_cols) == 0:
-                            income_cols = data['columns']
-                        # add the data
-                        income_output += data['data']
-                    elif statement == "bs":
-                        # add the column descriptions once only
-                        if len(bs_cols) == 0:
+                        if not bs_cols:
                             bs_cols = data['columns']
                         # add the data
                         bs_output += data['data']
                     elif statement == "cf":
                         # add the column descriptions once only
-                        if len(cf_cols) == 0:
+                        if not cf_cols:
                             cf_cols = data['columns']
                         # add the data
                         cf_output += data['data']
                     elif statement == "derived":
                         # add the column descriptions once only
-                        if len(derived_cols) == 0:
+                        if not derived_cols:
                             derived_cols = data['columns']
                         # add the data
                         derived_output += data['data']
 
+                    elif statement == "pl":
+                        # add the column descriptions once only
+                        if not income_cols:
+                            income_cols = data['columns']
+                        # add the data
+                        income_output += data['data']
 # make dataframe from output
 income_table = pd.DataFrame(income_output, columns=income_cols)
 print('Income table: ' + str(income_table) + '\n')
